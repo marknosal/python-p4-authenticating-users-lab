@@ -18,6 +18,10 @@ db.init_app(app)
 
 api = Api(app)
 
+class Home(Resource):
+    def get(self):
+        return {'message': 'Welcome Home!'}, 200
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -47,7 +51,35 @@ class ShowArticle(Resource):
             return make_response(article_json, 200)
 
         return {'message': 'Maximum pageview limit reached'}, 401
+    
+class Login(Resource):
 
+    def post(self):
+        user = User.query.filter_by(username=request.get_json()['username']).first()
+
+        session['user_id'] = user.id
+
+        return user.to_dict(), 200
+    
+class Logout(Resource):
+    
+    def delete(self):
+        session['user_id'] = None
+
+        return {}, 204
+    
+class CheckSession(Resource):
+    def get(self):
+        user = User.query.filter_by(id=session['user_id']).first()
+        if session['user_id']:
+            return user.to_dict(), 200
+        return {}, 401
+
+
+api.add_resource(CheckSession, '/check_session')
+api.add_resource(Logout, '/logout')
+api.add_resource(Login, '/login')
+api.add_resource(Home, '/')
 api.add_resource(ClearSession, '/clear')
 api.add_resource(IndexArticle, '/articles')
 api.add_resource(ShowArticle, '/articles/<int:id>')
